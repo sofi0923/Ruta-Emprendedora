@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emprendedor desde Cero: Mini Ciudad</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #1a1a2e;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .game-container {
+            background-color: #16213e;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 900px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 2px solid #0f3460;
+        }
+
+        .header {
+            background-color: #0f3460;
+            color: #e94560;
+            padding: 15px 20px;
+            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.3rem;
+            color: #fff;
+        }
+
+        .student-info {
+            font-size: 0.85rem;
+            color: #e94560;
+            font-weight: bold;
+        }
+
+        .stats-bar {
+            background-color: #533483;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-around;
+            font-weight: bold;
+            color: #fff;
+            font-size: 0.9rem;
+        }
+
+        .city-map {
+            position: relative;
+            width: 100%;
+            height: 420px;
+            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), 
+                        url('https://images.unsplash.com/photo-1524813686514-a57563d77965?auto=format&fit=crop&w=1000&q=80');
+            background-size: cover;
+            background-position: center;
+            border-bottom: 3px solid #0f3460;
+        }
+
+        .building {
+            position: absolute;
+            padding: 8px 12px;
+            background: rgba(15, 52, 96, 0.95);
+            border: 2px solid #e94560;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(233, 69, 96, 0.4);
+            text-align: center;
+            font-size: 0.75rem;
+            width: 140px;
+        }
+
+        .building:hover:not(.disabled) {
+            transform: scale(1.08);
+            background: #e94560;
+            color: #fff;
+            box-shadow: 0 6px 15px rgba(233, 69, 96, 0.8);
+        }
+
+        .building.disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            border-color: #666;
+            box-shadow: none;
+        }
+
+        .building.completed {
+            border-color: #4e9f3d;
+            background: rgba(78, 159, 61, 0.95);
+        }
+
+        #bldg-0 { top: 8%; left: 5%; }
+        #bldg-1 { top: 8%; left: 38%; }
+        #bldg-2 { top: 8%; right: 5%; }
+        #bldg-3 { top: 40%; right: 12%; }
+        #bldg-4 { top: 72%; right: 5%; }
+        #bldg-5 { top: 72%; left: 38%; }
+        #bldg-6 { top: 72%; left: 5%; }
+        #bldg-7 { top: 40%; left: 12%; }
+
+        .content {
+            padding: 20px;
+            background-color: #16213e;
+            min-height: 220px;
+        }
+
+        .text-box {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            color: #dcdde1;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .form-group input {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #0f3460;
+            background-color: #1a1a2e;
+            color: #fff;
+            font-size: 0.9rem;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn {
+            background-color: #0f3460;
+            color: white;
+            border: 1px solid #e94560;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+
+        .btn:hover {
+            background-color: #e94560;
+            transform: translateY(-2px);
+        }
+
+        .btn-action {
+            background-color: #4e9f3d;
+            border-color: #4e9f3d;
+            text-align: center;
+            font-weight: bold;
+            width: 100%;
+        }
+
+        .btn-action:hover {
+            background-color: #1e5128;
+        }
+
+        .btn-gameover {
+            background-color: #e94560;
+            border-color: #e94560;
+            text-align: center;
+            font-weight: bold;
+            width: 100%;
+        }
+
+        .btn-gameover:hover {
+            background-color: #a82338;
+        }
+
+        .hide { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <div class="header">
+        <h1>Emprendedor desde Cero</h1>
+        <span class="student-info" id="display-student">Esperando registro...</span>
+    </div>
+
+    <div class="stats-bar">
+        <span>Capital: $<span id="capital">50</span> USD</span>
+        <span>Reputación: <span id="reputation">100</span>%</span>
+        <span>Progreso: <span id="progress">0</span>/8 Puntos</span>
+    </div>
+
+    <div class="city-map" id="map">
+        <div id="bldg-0" class="building disabled" onclick="openLocation(0)">
+            💡 1. Incubadora
+            <div style="font-size: 0.65rem; color: #ddd;">Modelo de Negocio</div>
+        </div>
+        <div id="bldg-1" class="building disabled" onclick="openLocation(1)">
+            🏬 2. Mercado
+            <div style="font-size: 0.65rem; color: #ddd;">Insumos y Capital</div>
+        </div>
+        <div id="bldg-2" class="building disabled" onclick="openLocation(2)">
+            📋 3. Permisos
+            <div style="font-size: 0.65rem; color: #ddd;">Normativa e Higiene</div>
+        </div>
+        <div id="bldg-3" class="building disabled" onclick="openLocation(3)">
+            📢 4. Medios
+            <div style="font-size: 0.65rem; color: #ddd;">Estrategia Marketing</div>
+        </div>
+        <div id="bldg-4" class="building disabled" onclick="openLocation(4)">
+            🏷️ 5. Puesto Venta
+            <div style="font-size: 0.65rem; color: #ddd;">Fijación de Precios</div>
+        </div>
+        <div id="bldg-5" class="building disabled" onclick="openLocation(5)">
+            🗣️ 6. Atención
+            <div style="font-size: 0.65rem; color: #ddd;">Crisis de Clientes</div>
+        </div>
+        <div id="bldg-6" class="building disabled" onclick="openLocation(6)">
+            📊 7. Contabilidad
+            <div style="font-size: 0.65rem; color: #ddd;">Balance y Finanzas</div>
+        </div>
+        <div id="bldg-7" class="building disabled" onclick="openLocation(7)">
+            🌱 8. Expansión
+            <div style="font-size: 0.65rem; color: #ddd;">Innovación Verde</div>
+        </div>
+    </div>
+
+    <div class="content">
+        <!-- Registro Inicial -->
+        <div id="panel-register">
+            <div class="text-box">
+                <strong>📝 Registro del Emprendedor:</strong><br>
+                Ingresa tus datos antes de comenzar a construir tu empresa escolar.
+            </div>
+            <div class="form-group">
+                <input type="text" id="input-name" placeholder="Nombre completo del estudiante" required>
+                <input type="text" id="input-course" placeholder="Curso / Grado escolar (Ej: 9°A)" required>
+            </div>
+            <button class="btn btn-action" onclick="registerStudent()">Comenzar Emprendimiento</button>
+        </div>
+
+        <!-- Pantalla Inicial -->
+        <div id="panel-start" class="hide">
+            <div class="text-box" id="welcome-text"></div>
+        </div>
+
+        <!-- Pantalla de Interacción -->
+        <div id="panel-location" class="hide">
+            <div class="text-box" id="loc-description"></div>
+            <div class="options-container" id="loc-options"></div>
+        </div>
+
+        <!-- Pantalla de Resultado Intermedio -->
+        <div id="panel-result" class="hide">
+            <div class="text-box" id="result-text"></div>
+            <button class="btn btn-action" onclick="returnToMap()">Continuar Recorrido</button>
+        </div>
+
+        <!-- Pantalla de Game Over -->
+        <div id="panel-gameover" class="hide">
+            <div class="text-box">
+                <h2 style="color: #e94560;">💥 GAME OVER: Empresa en Quiebra</h2><br>
+                <p id="gameover-reason"></p><br>
+                <p>Manejar un negocio requiere cuidar la liquidez financiera y la confianza de los clientes.</p>
+            </div>
+            <button class="btn btn-gameover" onclick="resetGame()">Reintentar desde el Inicio</button>
+        </div>
+
+        <!-- Pantalla Final (Victoria) -->
+        <div id="panel-end" class="hide">
+            <div class="text-box">
+                <h2>🎓 ¡Empresa Graduada con Éxito!</h2><br>
+                <p id="final-summary"></p><br>
+                <blockquote style="font-style: italic; color: #e94560;">
+                    "El éxito de un emprendimiento no solo se mide en dinero, sino en la capacidad de resolver problemas, adaptarnos al cambio y tomar decisiones responsables."
+                </blockquote>
+            </div>
+            <button class="btn btn-action" onclick="resetGame()">Reiniciar Negocio</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let studentName = "";
+    let studentCourse = "";
+    let capital = 50;
+    let reputation = 100;
+    let currentStep = 0;
+    let isGameOver = false;
+
+    const locations = [
+        {
+            id: 0,
+            name: "Incubadora de Ideas (Modelo de Negocio)",
+            bldgId: "bldg-0",
+            text: "Paso 1: Tienes $50 USD. ¿Qué modelo de negocio vas a plantear para el colegio?",
+            options: [
+                {
+                    text: "Opción A: Copiar la idea de vender gaseosas y papas fritas industriales sin diferenciarte.",
+                    cost: 0, rep: -20,
+                    outcome: "Es una propuesta genérica y poco saludable. La directiva del colegio rechaza el concepto y tu reputación cae."
+                },
+                {
+                    text: "Opción B: Diseñar un puesto de snacks saludables con fruta fresca y empaques compostables.",
+                    cost: 0, rep: 15,
+                    outcome: "¡Gran visión! La comunidad educativa felicita tu enfoque saludable y ambiental."
+                },
+                {
+                    text: "Opción C: Vender productos de belleza importados de alto costo sin estudio de mercado previo.",
+                    cost: 0, rep: -10,
+                    outcome: "Los estudiantes no tienen presupuesto para esos productos. Tu propuesta genera poco interés."
+                }
+            ]
+        },
+        {
+            id: 1,
+            name: "Mercado Central (Insumos y Capital)",
+            bldgId: "bldg-1",
+            text: "Paso 2: Necesitas abastecerte de materia prima.",
+            options: [
+                {
+                    text: "Opción A: Comprar frutas locales frescas y envases ecológicos biodegradables ($25 USD).",
+                    cost: 25, rep: 10,
+                    outcome: "¡Excelente compra! Calidad garantizada, apoyo local y mantienes un margen de reserva."
+                },
+                {
+                    text: "Opción B: Comprar paquetes de frituras ultra-procesadas baratas al por mayor ($10 USD).",
+                    cost: 10, rep: -30,
+                    outcome: "La mala calidad de los alimentos causa descontento generalizado y la reputación del puesto se desploma."
+                },
+                {
+                    text: "Opción C: Gastar absolutamente todo tu capital ($50 USD) en insumos gourmet caros.",
+                    cost: 50, rep: 0,
+                    outcome: "Compraste insumos de lujo, pero te quedaste exactamente en $0 USD en la caja de reserva."
+                }
+            ]
+        },
+        {
+            id: 2,
+            name: "Comité Escolar (Permisos e Higiene)",
+            bldgId: "bldg-2",
+            text: "Paso 3: Debes formalizar la operación de tu negocio ante la rectoría del colegio.",
+            options: [
+                {
+                    text: "Opción A: Operar de forma informal en el patio sin consultar a nadie para ahorrar trámites.",
+                    cost: 0, rep: -50,
+                    outcome: "El comité de disciplina interviene el puesto de inmediato por violar el reglamento escolar."
+                },
+                {
+                    text: "Opción B: Pagar a otro estudiante para que venda por ti a escondidas de los profesores ($20 USD).",
+                    cost: 20, rep: -25,
+                    outcome: "Estrategia arriesgada que termina en llamado de atención, sanción y pérdida de capital."
+                },
+                {
+                    text: "Opción C: Presentar protocolo de higiene, manipulación limpia de alimentos y empaques ($5 USD).",
+                    cost: 5, rep: 15,
+                    outcome: "¡Aprobado con honores! Te otorgan el sello de 'Puesto Seguro y Saludable' del colegio."
+                }
+            ]
+        },
+        {
+            id: 3,
+            name: "Estudio de Medios (Estrategia de Marketing)",
+            bldgId: "bldg-3",
+            text: "Paso 4: Viene el gran torneo deportivo del colegio. ¿Cómo promocionas tu puesto?",
+            options: [
+                {
+                    text: "Opción A: Imprimir 200 folletos en papel sin permiso y pegarlos por todas las paredes.",
+                    cost: 15, rep: -30,
+                    outcome: "Llenaste el campus de basura. Te sancionan y te exigen limpiar los muros inmediatamente."
+                },
+                {
+                    text: "Opción B: Campaña en redes sociales del colegio con preventa y descuento por traer envase propio.",
+                    cost: -15,
+                    rep: 15,
+                    outcome: "¡Campaña viral! Agotas las preventas digitales y aumentas la liquidez de tu caja."
+                },
+                {
+                    text: "Opción C: No hacer publicidad y confiar únicamente en que la gente pase por casualidad.",
+                    cost: 0, rep: -10,
+                    outcome: "Pocas ventas durante la jornada por falta de visibilidad frente a la competencia."
+                }
+            ]
+        },
+        {
+            id: 4,
+            name: "Puesto de Venta (Fijación de Precios)",
+            bldgId: "bldg-4",
+            text: "Paso 5: Llega la hora de abrir el puesto. ¿Cómo fijas los precios de tus productos?",
+            options: [
+                {
+                    text: "Opción A: Triplicar los precios aprovechando que eres el único puesto abierto.",
+                    cost: -45, rep: -40,
+                    outcome: "Ganaste dinero inmediato, pero la comunidad se sintió estafada y la reputación cayó en picada."
+                },
+                {
+                    text: "Opción B: Regalar muestras gratis a todo el mundo sin cobrar nada para agradar.",
+                    cost: 20, rep: 10,
+                    outcome: "Regalaste tus productos sin generar margen de ganancia, desgastando tu capital acumulado."
+                },
+                {
+                    text: "Opción C: Fijar un precio justo basado en el costo del producto + un margen ético del 30%.",
+                    cost: -30, rep: 10,
+                    outcome: "Ventas constantes, clientes satisfechos y un flujo de ingresos equilibrado y sostenible."
+                }
+            ]
+        },
+        {
+            id: 5,
+            name: "Módulo de Atención (Crisis de Clientes)",
+            bldgId: "bldg-5",
+            text: "Paso 6: Hay una fila enorme, te quedas sin cambio en efectivo y un estudiante reclama por su vuelto.",
+            options: [
+                {
+                    text: "Opción A: Escuchar con empatía, revisar la caja y habilitar pagos con código QR.",
+                    cost: 0, rep: 15,
+                    outcome: "Resolviste el problema con calma. El pago digital agilizó las ventas de toda la fila."
+                },
+                {
+                    text: "Opción B: Discutir fuertemente con el cliente frente a todos para defender tu posición.",
+                    cost: 10, rep: -40,
+                    outcome: "Escándalo público. Varios clientes frustrados se van y critican duramente tu negocio."
+                },
+                {
+                    text: "Opción C: Ignorar al cliente molesto y continuar atendiendo a la persona de atrás.",
+                    cost: 5, rep: -25,
+                    outcome: "El cliente afectado difunde una pésima imagen de tu atención al cliente."
+                }
+            ]
+        },
+        {
+            id: 6,
+            name: "Oficina Contable (Balance Financiero)",
+            bldgId: "bldg-6",
+            text: "Paso 7: Cierre de la semana. Toca hacer el balance contable y guardar reservas.",
+            options: [
+                {
+                    text: "Opción A: Gastarte todo el dinero acumulado en la caja en compras personales.",
+                    cost: 40, rep: -20,
+                    outcome: "Descuadre financiero crítico. Te quedas sin flujo de caja para continuar operando."
+                },
+                {
+                    text: "Opción B: Registrar ingresos/gastos ordenadamente y guardar un fondo de reserva ($10 USD).",
+                    cost: 10, rep: 10,
+                    outcome: "Cuentas claras y finanzas sanas. Mantienes un fondo protegido ante imprevistos."
+                },
+                {
+                    text: "Opción C: Guardar el dinero sin anotar las cuentas ni hacer balance de inventario.",
+                    cost: 0, rep: -10,
+                    outcome: "Descontrol contable; pierdes el rastro de si el negocio es rentable o no."
+                }
+            ]
+        },
+        {
+            id: 7,
+            name: "Centro de Expansión (Innovación Sostenible)",
+            bldgId: "bldg-7",
+            text: "Paso 8: Tu negocio está consolidado. ¿Cómo inviertes las utilidades para el evento final?",
+            options: [
+                {
+                    text: "Opción A: Dejar el negocio tal cual está sin hacer ninguna mejora ni innovación.",
+                    cost: 0, rep: 0,
+                    outcome: "El negocio se vuelve monótono y pierde atractivo frente a otros emprendimientos."
+                },
+                {
+                    text: "Opción B: Repartir todas las utilidades entre los socios y cerrar el puesto para siempre.",
+                    cost: -10, rep: -10,
+                    outcome: "Obtienes un retiro de utilidades, pero pierdes la continuidad del proyecto escolar."
+                },
+                {
+                    text: "Opción C: Reinvertir parte de la ganancia en un punto verde de reciclaje para el colegio.",
+                    cost: 10, rep: 20,
+                    outcome: "¡Éxito total! La rectoría premia tu emprendimiento como modelo de negocio sostenible."
+                }
+            ]
+        }
+    ];
+
+    function registerStudent() {
+        const name = document.getElementById('input-name').value.trim();
+        const course = document.getElementById('input-course').value.trim();
+
+        if (!name || !course) {
+            alert("Por favor ingresa tu nombre y curso para continuar.");
+            return;
+        }
+
+        studentName = name;
+        studentCourse = course;
+
+        document.getElementById('display-student').innerText = `${studentName} (${studentCourse})`;
+        document.getElementById('panel-register').classList.add('hide');
+        document.getElementById('panel-start').classList.remove('hide');
+        document.getElementById('bldg-0').classList.remove('disabled');
+
+        document.getElementById('welcome-text').innerHTML = `
+            <strong>¡Bienvenido(a) ${studentName} del curso ${studentCourse}!</strong><br><br>
+            Cuentas con $50 USD. Toma decisiones con cuidado: si tu capital llega a <strong>$0 USD</strong> o tu reputación cae a <strong>0%</strong>, la empresa se declarará en quiebra.<br><br>
+            📍 <strong>Paso 1:</strong> Haz clic en la <strong>Incubadora de Ideas</strong> para comenzar.
+        `;
+    }
+
+    function updateUI() {
+        document.getElementById('capital').innerText = capital;
+        document.getElementById('reputation').innerText = reputation;
+        document.getElementById('progress').innerText = currentStep;
+    }
+
+    function openLocation(index) {
+        if (index !== currentStep || isGameOver) return;
+
+        document.getElementById('panel-start').classList.add('hide');
+        document.getElementById('panel-location').classList.remove('hide');
+
+        const loc = locations[index];
+        document.getElementById('loc-description').innerHTML = `<strong>📍 Ubicación: ${loc.name}</strong><br><br>${loc.text}`;
+
+        const optionsBox = document.getElementById('loc-options');
+        optionsBox.innerHTML = '';
+
+        loc.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'btn';
+            btn.innerText = opt.text;
+            btn.onclick = () => selectDecision(opt);
+            optionsBox.appendChild(btn);
+        });
+    }
+
+    function selectDecision(option) {
+        capital -= option.cost;
+        reputation += option.rep;
+
+        if (reputation > 100) reputation = 100;
+
+        if (capital <= 0 || reputation <= 0) {
+            if (capital <= 0) capital = 0;
+            if (reputation <= 0) reputation = 0;
+            updateUI();
+            triggerGameOver(option.outcome);
+            return;
+        }
+
+        updateUI();
+
+        const currentBldg = document.getElementById(locations[currentStep].bldgId);
+        currentBldg.classList.remove('disabled');
+        currentBldg.classList.add('completed');
+
+        document.getElementById('panel-location').classList.add('hide');
+        document.getElementById('panel-result').classList.remove('hide');
+        document.getElementById('result-text').innerText = option.outcome;
+
+        currentStep++;
+    }
+
+    function triggerGameOver(lastOutcome) {
+        isGameOver = true;
+        document.getElementById('panel-location').classList.add('hide');
+        document.getElementById('panel-gameover').classList.remove('hide');
+
+        let reason = lastOutcome + "<br><br><strong>Causa de la quiebra:</strong> ";
+        if (capital <= 0 && reputation <= 0) {
+            reason += "Te quedaste sin capital ($0 USD) y sin reputación (0%).";
+        } else if (capital <= 0) {
+            reason += "Agotaste todo tu dinero disponible ($0 USD).";
+        } else {
+            reason += "Tu reputación llegó al 0%. Perdiste la confianza de la comunidad.";
+        }
+
+        document.getElementById('gameover-reason').innerHTML = reason;
+    }
+
+    function returnToMap() {
+        document.getElementById('panel-result').classList.add('hide');
+
+        if (currentStep < locations.length) {
+            const nextBldg = document.getElementById(locations[currentStep].bldgId);
+            nextBldg.classList.remove('disabled');
+            document.getElementById('panel-start').classList.remove('hide');
+            document.getElementById('panel-start').innerHTML = `
+                <div class="text-box">
+                    ¡Paso completado! Siguiente parada en la ciudad:<br>
+                    👉 <strong>${locations[currentStep].name}</strong>.
+                </div>
+            `;
+        } else {
+            showEndGame();
+        }
+    }
+
+    function showEndGame() {
+        document.getElementById('panel-end').classList.remove('hide');
+        document.getElementById('final-summary').innerHTML = `
+            <strong>Estudiante:</strong> ${studentName} | <strong>Curso:</strong> ${studentCourse}<br><br>
+            <strong>Balance General de la Empresa Escolar:</strong><br>
+            💰 Capital Acumulado Final: $${capital} USD<br>
+            ⭐ Reputación de Marca: ${reputation}%<br>
+            🏆 Calificación: ${reputation >= 70 ? '¡Emprendedor Líder y Sostenible!' : 'Riesgo Financiero / Requiere Ajustes Estratégicos'}
+        `;
+    }
+
+    function resetGame() {
+        capital = 50;
+        reputation = 100;
+        currentStep = 0;
+        isGameOver = false;
+
+        locations.forEach(loc => {
+            const b = document.getElementById(loc.bldgId);
+            b.classList.remove('completed');
+            b.classList.add('disabled');
+        });
+
+        document.getElementById('panel-end').classList.add('hide');
+        document.getElementById('panel-gameover').classList.add('hide');
+        document.getElementById('panel-result').classList.add('hide');
+        document.getElementById('panel-location').classList.add('hide');
+        document.getElementById('panel-start').classList.add('hide');
+        
+        document.getElementById('panel-register').classList.remove('hide');
+        document.getElementById('display-student').innerText = "Esperando registro...";
+        document.getElementById('input-name').value = "";
+        document.getElementById('input-course').value = "";
+        
+        updateUI();
+    }
+</script>
+
+</body>
+</html>
